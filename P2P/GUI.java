@@ -21,17 +21,17 @@ public class GUI {
     private JPanel home;
     private JComboBox availableInterfaces;
     private JTextField sourceIP;
-
-
     private JTextField sourcePort;
     private JTextField distIP;
     private JTextField distPort;
     private JButton sendButton;
+
     //vars
     int sourcePortVar;
     String sourceIPVar = null;
-    int distPortVar = 6789;
+    int distPortVar;
     Participant client;
+
     //constants
     private static final String IPV4_PATTERN =
             "^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
@@ -39,8 +39,12 @@ public class GUI {
                     "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
                     "([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 
-    public GUI(int port) {
-        sourcePortVar = port;
+
+    public GUI(int sourcePort,int distPort) {
+        //init source port
+        sourcePortVar = sourcePort;
+        distPortVar = distPort;
+
         //** listeners init **
         //update source ip
         sourceIP.addFocusListener(new FocusAdapter() {
