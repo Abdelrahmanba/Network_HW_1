@@ -40,10 +40,10 @@ public class GUI {
                     "([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 
 
-    public GUI(int sourcePort,int distPort) {
+    public GUI(int sPort,int dPort) {
         //init source port
-        sourcePortVar = sourcePort;
-        distPortVar = distPort;
+        sourcePortVar = sPort;
+        distPortVar = dPort;
 
         //** listeners init **
         //update source ip
