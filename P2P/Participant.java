@@ -11,12 +11,16 @@ import java.net.SocketException;
 public class Participant {
     private int myPort;
     private String myIP;
+    private DatagramSocket socket;
+    private GUI parentGUI;
+
+
 
     public void setParentGUI(GUI parentGUI) {
+
         this.parentGUI = parentGUI;
     }
 
-    private GUI parentGUI;
 
 
     public void setMyPort(int myPort) throws SocketException {
@@ -33,7 +37,6 @@ public class Participant {
     }
 
 
-    private DatagramSocket socket;
 
     Participant(int myPort,String myIP) throws SocketException {
 
@@ -85,10 +88,11 @@ public class Participant {
             socket.receive(receivePacket);
 
             String sentence = new String(receivePacket.getData());
+            parentGUI.getStatus().setText(String.format("FROM %s,%s, USING (UDP): %s\n",  String.valueOf(receivePacket.getAddress() ),String.valueOf(receivePacket.getPort()), sentence));
             sentence = myIP + ":" + myPort + " SAYS: " + sentence;
             parentGUI.print(sentence, Color.RED);
 
-//            System.out.printf("FROM %s,%s, USING (UDP): %s\n",  String.valueOf(receivePacket.getAddress() ),String.valueOf(receivePacket.getPort()), sentence);
+
 
         }
 

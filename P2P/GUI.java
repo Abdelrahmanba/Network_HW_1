@@ -109,6 +109,7 @@ public class GUI {
         return home;
     }
 
+    public JTextField getStatus() { return status; }
 
     private void createUIComponents() {
         //Available interfaces init
