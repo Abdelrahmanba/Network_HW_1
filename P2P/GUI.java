@@ -31,6 +31,7 @@ public class GUI {
     String sourceIPVar = null;
     int distPortVar;
     Participant client;
+    Status s;
 
     //constants
     private static final String IPV4_PATTERN =
@@ -40,7 +41,7 @@ public class GUI {
                     "([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 
 
-    public GUI(int sPort,int dPort) {
+    public GUI(int sPort, int dPort) {
         //init source port
         sourcePortVar = sPort;
         distPortVar = dPort;
@@ -100,7 +101,7 @@ public class GUI {
             public void actionPerformed(ActionEvent e) {
                 client.sendData(Integer.parseInt(distPort.getText()), msg.getText());
                 String sentence = "ME:" + msg.getText();
-                print(sentence,Color.BLUE);
+                print(sentence, Color.BLUE);
             }
         });
     }
@@ -109,7 +110,9 @@ public class GUI {
         return home;
     }
 
-    public JTextField getStatus() { return status; }
+    public JTextField getStatus() {
+        return status;
+    }
 
     private void createUIComponents() {
         //Available interfaces init
@@ -131,26 +134,25 @@ public class GUI {
         distPort = new JTextField(String.valueOf(distPortVar));
         //init default client
         try {
-            client = new Participant(sourcePortVar, sourceIPVar);
+            client = new Participant(sourceIPVar, sourcePortVar, "test name");
             client.setParentGUI(this);
         } catch (SocketException e) {
             JOptionPane.showMessageDialog(home, "Port Taken,Try another one", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    public void print(String msg, Color c)
-    {
+    public void print(String msg, Color c) {
         StyleContext sc = StyleContext.getDefaultStyleContext();
         AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, c);
         StyledDocument doc = chat.getStyledDocument();
 
-        try
-        {
-            doc.insertString(doc.getLength(), msg + "\n",aset);
-        }
-        catch(Exception e) { System.out.println(e);
+        try {
+            doc.insertString(doc.getLength(), msg + "\n", aset);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
+
     private boolean validatePortField(JTextField portField) {
         try {
             Integer.parseInt(portField.getText());

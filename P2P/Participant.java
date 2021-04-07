@@ -8,41 +8,49 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
+import java.net.Socket;
+
 public class Participant {
-    private int myPort;
-    private String myIP;
+    //    private int myPort;
+//    private String myIP;
     private DatagramSocket socket;
     private GUI parentGUI;
+    private Status status;
 
+    public Status getStatus() {
+        return status;
+    }
 
+    public void setStatus(Status status) {
+        this.status = status;
+    }
 
     public void setParentGUI(GUI parentGUI) {
-
         this.parentGUI = parentGUI;
     }
 
-
-
     public void setMyPort(int myPort) throws SocketException {
-        if(this.myPort==myPort){
+        if (this.status.getPort() == myPort) {
             return;
         }
-        this.myPort = myPort;
+//        this.myPort = myPort;
+        this.status.setPort(myPort);
         createSocket(myPort);
-
     }
 
-    public void setMyIP(String myIP)  {
-        this.myIP = myIP;
+    public void setMyIP(String myIP) {
+//        this.myIP = myIP;
+        this.status.setIP(myIP);
     }
 
+    Participant(String myIP, int myPort, String username) throws SocketException {
 
-
-    Participant(int myPort,String myIP) throws SocketException {
-
-        this.myPort = myPort;
-        this.myIP = myIP;
-
+//        this.myPort = myPort;
+//        this.myIP = myIP;
+        status = new Status(myIP, myPort, username);
 
         createSocket(myPort);
 
@@ -64,7 +72,8 @@ public class Participant {
     public void sendData(int destinationPort, String msg) {
         try {
             // getting the IP
-            InetAddress IPAddress = InetAddress.getByName(myIP);
+//            InetAddress IPAddress = InetAddress.getByName(myIP);
+            InetAddress IPAddress = InetAddress.getByName(this.status.getIP());
 
             byte[] sendData;
             // reading data and store it in bytes form
@@ -88,13 +97,44 @@ public class Participant {
             socket.receive(receivePacket);
 
             String sentence = new String(receivePacket.getData());
-            parentGUI.getStatus().setText(String.format("FROM %s,%s, USING (UDP): %s\n",  String.valueOf(receivePacket.getAddress() ),String.valueOf(receivePacket.getPort()), sentence));
-            sentence = myIP + ":" + myPort + " SAYS: " + sentence;
+            parentGUI.getStatus().setText(String.format("FROM %s,%s, USING (UDP): %s\n",
+                    String.valueOf(receivePacket.getAddress()), String.valueOf(receivePacket.getPort()), sentence));
+//            sentence = myIP + ":" + myPort + " SAYS: " + sentence;
+            sentence = this.status.getIP() + ":" + this.status.getPort() + " SAYS: " + sentence;
             parentGUI.print(sentence, Color.RED);
-
-
-
         }
-
     }
+
+    //******************************************************************************************************************
+    public void getDataFromServer(String msg) {
+        String sentence;
+        String modifiedSentence;
+        // TODO: 4- replace the input stream with this function parameter 'msg'
+        try {
+            // the data is gonna be read through inFormUser object
+            // creating a TCP socket of type Socket and specifying the IP and port number of the server
+            Socket clientSocket = new Socket("localhost", 6789);
+            // controlling the input and output stream of the TCP socket
+            DataOutputStream outToServer =
+                    new DataOutputStream(clientSocket.getOutputStream());
+            BufferedReader inFromServer =
+                    new BufferedReader(new
+                            InputStreamReader(clientSocket.getInputStream()));
+            // reading data
+            sentence = msg;
+            // this will send data to the server
+            outToServer.writeBytes(sentence + '\n');
+            // received data from server side
+            modifiedSentence = inFromServer.readLine();
+            // print the result
+            System.out.println("FROM SERVER USING (TCP): " + modifiedSentence);
+            // closing the socket
+
+            clientSocket.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }
