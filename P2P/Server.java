@@ -4,34 +4,43 @@ import P2P.Search.SearchByUsername;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
 public class Server {
-    //******************************************************************************************************************
+    private String myIP;
+    private int myPort;
     private ArrayList<Status> listOfUsers = new ArrayList<>();
+    private ArrayList<Socket> socketsList = new ArrayList<>();
+    private GUI_server gui;
+
+    public void setGui(GUI_server gui) {
+        this.gui = gui;
+    }
 
     public void addUser(Status status) {
         listOfUsers.add(status);
     }
 
+    public void clearListOfUsers() {
+        this.listOfUsers.clear();
+    }
+
     public ArrayList<Status> getListOfUsers() {
         return listOfUsers;
     }
-
     public Status getUserByUsername(String username) {
+
         return new SearchByUsername(listOfUsers, username).search();
     }
 
-    //******************************************************************************************************************
-    private String myIP;
-    private int myPort;
-
-    public Server(String myIP, int myPort) {
+    public Server(String myIP, int myPort)  {
         this.myIP = myIP;
         this.myPort = myPort;
 
@@ -40,58 +49,69 @@ public class Server {
             public void run() {
                 try {
                     startReceiving();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } catch (IOException e) {
+                    JOptionPane.showMessageDialog(gui.getMainPanel(), "Port Already in Use", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         }).start();
     }
 
-    //******************************************************************************************************************
-    // TODO:1- here you have to connect the TCP PORT, IP with this method
-    // TODO:2- replace BufferedReader, DataOutputStream with inputs from GUI
-    public void startReceiving() {
+    public void startReceiving() throws IOException {
         String clientMessage;
-        String responseMessage = null;
+//        String responseMessage = null;
 
-        try {
             // creating a listening socket of type ServerSocket and specifying the port number it's gonna use
             ServerSocket welcomeSocket = new ServerSocket(myPort);
 
             while (true) {
                 // accepting different client sockets
                 Socket connectionSocket = welcomeSocket.accept();
+
                 // handle the input and output stream of the socket to the inFromClient and outToClient objects
                 BufferedReader inFromClient =
                         new BufferedReader(new
                                 InputStreamReader(connectionSocket.getInputStream()));
-
-                DataOutputStream outToClient =
-                        new DataOutputStream(connectionSocket.getOutputStream());
-                // reading the data
                 clientMessage = inFromClient.readLine();
-                // processing the data
-//                capitalizedSentence = clientSentence.toUpperCase() + '\n';
+                if(clientMessage.split(":")[0].equals("logOut")){
+                    int socketPort = Integer.parseInt(clientMessage.split(":")[1]);
+                    String socketIP = clientMessage.split(":")[2];
 
-                // it would be in json format, so we convert it to json object
-                JsonObject fromJSON = new Gson().fromJson(clientMessage, JsonObject.class);
-                String typeOfRequest = fromJSON.get("type_of_request").toString().replaceAll("\"", "");
+                    for(int i = 0; i < listOfUsers.size(); i++){
+                        if((listOfUsers.get(i).getTcpSocketIp()).equals(socketIP) && +listOfUsers.get(i).getTcpSocketPort() == socketPort){
+                            listOfUsers.remove(i);
+                            socketsList.remove(i);
+                        }
+                    }
 
-                if (typeOfRequest.equals("AllUsers")) {
-                    responseMessage = new Gson().toJson(getListOfUsers())+ "\n";
-
-                } else if (typeOfRequest.equals("SingleUser")) {
-                    String username = fromJSON.get("username").toString().replaceAll("\"", "");
-                    responseMessage = new Gson().toJson(getUserByUsername(username))+ "\n";
                 }
+                else {
+                    Status status = new Gson().fromJson(clientMessage, Status.class);
+                    addUser(status);
+                    socketsList.add(connectionSocket);
 
-                // returning the processed data and directing
-                outToClient.writeBytes(responseMessage);
+                }
+                gui.setActiveSet(listOfUsers);
+                updateSocketList();
+
+
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
     }
+
+    public void updateSocketList() throws IOException {
+        for(Socket s: socketsList){
+            DataOutputStream outToClient = new DataOutputStream(s.getOutputStream());
+            String responseMessage = new Gson().toJson(getListOfUsers())+ "\n";
+            outToClient.writeBytes(responseMessage);
+        }
+
+    }
+
+
+
+
+
+
 
 
 }

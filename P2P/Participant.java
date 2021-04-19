@@ -1,24 +1,28 @@
 package P2P;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
+import java.lang.reflect.Type;
+import java.net.*;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
-import java.net.Socket;
+import java.util.ArrayList;
 
 public class Participant {
     //    private int myPort;
 //    private String myIP;
     private DatagramSocket socket;
-    private GUI parentGUI;
+    private GUI_client parentGUI;
     private Status status;
+    private boolean loggedIn = true;
+    private int tcpSocketPort;
+    private String tcpSocketIp;
 
     public Status getStatus() {
         return status;
@@ -28,7 +32,7 @@ public class Participant {
         this.status = status;
     }
 
-    public void setParentGUI(GUI parentGUI) {
+    public void setParentGUI(GUI_client parentGUI) {
         this.parentGUI = parentGUI;
     }
 
@@ -36,23 +40,22 @@ public class Participant {
         if (this.status.getPort() == myPort) {
             return;
         }
-//        this.myPort = myPort;
         this.status.setPort(myPort);
         createSocket(myPort);
     }
 
     public void setMyIP(String myIP) {
-//        this.myIP = myIP;
         this.status.setIP(myIP);
     }
 
     Participant(String myIP, int myPort, String username) throws SocketException {
-
-//        this.myPort = myPort;
-//        this.myIP = myIP;
-        status = new Status(myIP, myPort, username);
-
+        this.status = new Status(myIP, myPort, username);
         createSocket(myPort);
+
+    }
+
+    private void createSocket(int myPort) throws SocketException {
+        this.socket = new DatagramSocket(myPort);
 
         new Thread(new Runnable() {
             public void run() {
@@ -65,15 +68,9 @@ public class Participant {
         }).start();
     }
 
-    private void createSocket(int myPort) throws SocketException {
-        this.socket = new DatagramSocket(myPort);
-    }
-
-    public void sendData(int destinationPort, String msg) {
+    public void sendData(String distIP, int destinationPort, String msg) {
         try {
-            // getting the IP
-//            InetAddress IPAddress = InetAddress.getByName(myIP);
-            InetAddress IPAddress = InetAddress.getByName(this.status.getIP());
+            InetAddress IPAddress = InetAddress.getByName(distIP);
 
             byte[] sendData;
             // reading data and store it in bytes form
@@ -105,36 +102,55 @@ public class Participant {
         }
     }
 
-    //******************************************************************************************************************
-    public void getDataFromServer(String msg) {
+    public void getDataFromServer(String serverIP, int serverPort, String msg) throws ConnectException, UnknownHostException, IOException {
         String sentence;
-        String modifiedSentence;
-        // TODO: 4- replace the input stream with this function parameter 'msg'
-        try {
-            // the data is gonna be read through inFormUser object
-            // creating a TCP socket of type Socket and specifying the IP and port number of the server
-            Socket clientSocket = new Socket("localhost", 6789);
-            // controlling the input and output stream of the TCP socket
-            DataOutputStream outToServer =
-                    new DataOutputStream(clientSocket.getOutputStream());
-            BufferedReader inFromServer =
-                    new BufferedReader(new
-                            InputStreamReader(clientSocket.getInputStream()));
-            // reading data
-            sentence = msg;
+        InetAddress IPAddress = InetAddress.getByName(serverIP);
+        Socket clientSocket = new Socket(IPAddress, serverPort);
+        DataOutputStream outToServer =
+                new DataOutputStream(clientSocket.getOutputStream());
+        BufferedReader inFromServer =
+                new BufferedReader(new
+                        InputStreamReader(clientSocket.getInputStream()));
+        if(msg == "allClients"){
+            tcpSocketPort = clientSocket.getLocalPort();
+            tcpSocketIp = String.valueOf(clientSocket.getInetAddress());
+            status.setTcpSocketIp(tcpSocketIp);
+            status.setTcpSocketPort(tcpSocketPort);
+            sentence = new Gson().toJson(this.status);
             // this will send data to the server
             outToServer.writeBytes(sentence + '\n');
             // received data from server side
-            modifiedSentence = inFromServer.readLine();
-            // print the result
-            System.out.println("FROM SERVER USING (TCP): " + modifiedSentence);
-            // closing the socket
+            new Thread(new Runnable() {
+                public void run() {
+                    while (loggedIn) {
+                        String userList;
+                        try {
+                            userList = inFromServer.readLine();
+                            if (userList != null) {
+                                Type collectionType = new TypeToken<ArrayList<Status>>() {
+                                }.getType();
+                                ArrayList<Status> users = new Gson().fromJson(userList, collectionType);
+                                parentGUI.setActiveSet(users);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
 
-            clientSocket.close();
 
-        } catch (Exception e) {
-            e.printStackTrace();
+                }
+            }).start();
         }
+        else if(msg == "logOut"){
+            sentence = msg+":"+tcpSocketPort+":"+tcpSocketIp;
+            outToServer.writeBytes(sentence + '\n');
+            parentGUI.setActiveSet(new ArrayList<Status>());
+            clientSocket.close();
+        }
+
+
+
     }
 
 }
+
