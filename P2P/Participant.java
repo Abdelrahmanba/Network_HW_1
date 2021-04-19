@@ -145,6 +145,7 @@ public class Participant {
             sentence = msg+":"+tcpSocketPort+":"+tcpSocketIp;
             outToServer.writeBytes(sentence + '\n');
             parentGUI.setActiveSet(new ArrayList<Status>());
+            parentGUI.clear();
             clientSocket.close();
         }
 

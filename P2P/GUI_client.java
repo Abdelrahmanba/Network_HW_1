@@ -189,7 +189,7 @@ public class GUI_client {
         });
         activeUsers.addListSelectionListener(e -> {
             try {
-                selectedUser = (String) activeUsers.getSelectedValue();
+                selectedUser = (String) activeUsers.getSelectedValue().toString();
                 String[] data = selectedUser.split(":");
                 distIP.setText(data[0]);
                 distPort.setText(data[1]);
@@ -281,5 +281,9 @@ public class GUI_client {
 
     public JTextField getStatus() {
         return status;
+    }
+
+    public void clear() {
+        chat.setText("");
     }
 }
