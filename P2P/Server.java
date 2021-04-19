@@ -1,6 +1,5 @@
 package P2P;
 
-import P2P.Search.SearchByUsername;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -35,10 +34,7 @@ public class Server {
     public ArrayList<Status> getListOfUsers() {
         return listOfUsers;
     }
-    public Status getUserByUsername(String username) {
 
-        return new SearchByUsername(listOfUsers, username).search();
-    }
 
     public Server(String myIP, int myPort)  {
         this.myIP = myIP;
